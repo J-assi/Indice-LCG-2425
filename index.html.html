@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivio di sem</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f1eb 0%, #e8e0d3 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            padding-top: 120px;
+        }
+
+        .archive-container {
+            height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 280px;
+
+        }
+
+        .folder {
+            background: linear-gradient(145deg, #d4af37, #b8941f);
+            border: 2px solid #8b7322;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: -30px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .folder:not(.expanded):not(.selected) {
+            height: calc((100vh - 500px) / 4);
+        }
+
+        .folder:nth-child(1) { z-index: 1; }
+        .folder:nth-child(2) { z-index: 2; }
+        .folder:nth-child(3) { z-index: 3; }
+        .folder:nth-child(4) { z-index: 4; }
+        .folder:nth-child(5) { z-index: 5; }
+        .folder:nth-child(6) { z-index: 6; }
+
+        .folder.selected {
+            height: 35vh;
+            transform: translateY(-20px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+        }
+
+        .folder.expanded {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            transform: none;
+            margin: 0;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .folder.expanded .folder-tab {
+            display: none;
+        }
+
+        .folder-tab {
+            background: linear-gradient(145deg, #ddb347, #c9a136);
+            border: 2px solid #8b7322;
+            border-bottom: none;
+            position: absolute;
+            top: -36px;
+            padding: 8px 20px;
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+            min-width: 200px;
+            min-height: 34px;
+            text-align: center;
+        }
+
+        .sub-tabs {
+            position: absolute;
+            top: -40px;
+            display: none;
+            gap: 8px;
+            z-index: 15;
+        }
+
+        .folder.selected .sub-tabs {
+            display: flex;
+        }
+
+        .sub-tab {
+            background: linear-gradient(145deg, #c9a136, #b8941f);
+            border: 2px solid #8b7322;
+            width: 40px;
+            height: 40px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 -2px 6px rgba(0,0,0,0.2);
+            font-size: 12px;
+            font-weight: bold;
+            color: #2c1810;
+        }
+
+        .sub-tab:hover {
+            background: linear-gradient(145deg, #ddb347, #c9a136);
+            transform: translateY(-2px);
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
+        }
+
+        .sub-tab.active {
+            background: linear-gradient(145deg, #f4d03f, #d4af37);
+            box-shadow: 0 -4px 12px rgba(212, 175, 55, 0.4);
+        }
+
+        .folder:nth-child(1) .folder-tab { left: 20px; }
+        .folder:nth-child(2) .folder-tab { left: 100px; }
+        .folder:nth-child(3) .folder-tab { left: 180px; }
+        .folder:nth-child(4) .folder-tab { left: 260px; }
+        .folder:nth-child(5) .folder-tab { left: 340px; }
+        .folder:nth-child(6) .folder-tab { left: 420px; }
+
+        .folder:nth-child(1) .sub-tabs { left: 220px; }
+        .folder:nth-child(2) .sub-tabs { left: 300px; }
+        .folder:nth-child(3) .sub-tabs { left: 380px; }
+        .folder:nth-child(4) .sub-tabs { left: 460px; }
+        .folder:nth-child(5) .sub-tabs { left: 540px; }
+        .folder:nth-child(6) .sub-tabs { left: 620px; }
+
+        .folder:nth-child(1) .sub-tabs { top: -35px; }
+        .folder:nth-child(2) .sub-tabs { top: -35px; }
+        .folder:nth-child(3) .sub-tabs { top: -35px; }
+        .folder:nth-child(4) .sub-tabs { top: -35px; }
+        .folder:nth-child(5) .sub-tabs { top: -35px; }
+        .folder:nth-child(6) .sub-tabs { top: -35px; }
+
+        .folder-title {
+            color: #2c1810;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+            white-space: nowrap;
+        }
+
+        .folder-number {
+            display: none;
+        }
+
+        .folder-content {
+            flex: 1;
+            background: #faf8f3;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+            display: none;
+            margin-top: 0;
+        }
+
+        .folder-content {
+            flex: 1;
+            background: #faf8f3;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+            display: none;
+        }
+
+        .folder.selected .folder-content,
+        .folder.expanded .folder-content {
+            display: block;
+        }
+
+        .folder.expanded .folder-content {
+            height: calc(100vh - 80px);
+        }
+
+        /* Stile per il foglio di lavoro collage */
+        .canvas-area {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: 
+                linear-gradient(90deg, rgba(200,200,200,0.3) 1px, transparent 1px),
+                linear-gradient(rgba(200,200,200,0.3) 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 500px;
+        }
+
+        .collage-element {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            cursor: move;
+            user-select: none;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .collage-element:hover {
+            border-color: #d4af37;
+        }
+
+        .collage-element.selected {
+            border-color: #b8941f;
+        }
+
+        .text-element {
+            background: #fff9e6;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.4;
+            min-width: 150px;
+        }
+
+        .image-placeholder {
+            background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+            min-width: 200px;
+            min-height: 150px;
+        }
+
+        /* Pulsanti di controllo */
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: none;
+            gap: 10px;
+        }
+
+        .folder.selected .controls,
+        .folder.expanded .controls {
+            display: flex;
+        }
+
+        .btn {
+            background: #d4af37;
+            color: #2c1810;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background: #b8941f;
+            transform: translateY(-2px);
+        }
+
+        /* Bottone chiudi per vista espansa */
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #8b4513;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .folder.expanded .close-btn {
+            display: block;
+        }
+
+        /* Animazioni per le cartelle non selezionate */
+        .folder:not(.selected):not(.expanded) .folder-content {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .folder.selected .folder-content {
+            opacity: 1;
+            transform: translateY(0);
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Preview del contenuto per cartelle selezionate */
+        .content-preview {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+            display: none;
+        }
+
+        .folder.selected .content-preview {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="archive-container">
+        <!-- Cartella 1: Schizzi Iniziali -->
+        <div class="folder" data-folder="1">
+            <div class="folder-tab">
+                <div class="folder-title">Schizzi Iniziali</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="mood" title="Mood Board">M</div>
+                <div class="sub-tab" data-subtab="sketches" title="Bozzetti">B</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element text-element" style="top: 50px; left: 50px;">
+                        <div contenteditable="true">Concept iniziale: linee fluide ispirate al movimento dell'acqua...</div>
+                    </div>
+                    <div class="collage-element image-placeholder" style="top: 150px; left: 300px;">
+                        [Schizzo del vestito principale]
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Schizzi preliminari e prime idee creative per la collezione
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartella 2: Ricerca Tessuti -->
+        <div class="folder" data-folder="2">
+            <div class="folder-tab">
+                <div class="folder-title">Ricerca Tessuti</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="samples" title="Campioni">C</div>
+                <div class="sub-tab" data-subtab="suppliers" title="Fornitori">F</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element text-element" style="top: 80px; left: 200px;">
+                        <div contenteditable="true">Seta naturale, peso 12mm, finitura satinata</div>
+                    </div>
+                    <div class="collage-element image-placeholder" style="top: 200px; left: 100px;">
+                        [Campione tessuto principale]
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Selezione e analisi dei materiali per la collezione
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartella 3: Palette Colori -->
+        <div class="folder" data-folder="3">
+            <div class="folder-tab">
+                <div class="folder-title">Palette Colori</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="primary" title="Colori Primari">P</div>
+                <div class="sub-tab" data-subtab="accent" title="Colori Accento">A</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element text-element" style="top: 120px; left: 80px;">
+                        <div contenteditable="true">Tonalità terrose: ocra, siena bruciata, avorio</div>
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Studio cromatico e combinazioni colore
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartella 4: Prototipi -->
+        <div class="folder" data-folder="4">
+            <div class="folder-tab">
+                <div class="folder-title">Prototipi</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="first" title="Prima Prova">1</div>
+                <div class="sub-tab" data-subtab="refined" title="Versione Rifinita">R</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element image-placeholder" style="top: 60px; left: 150px;">
+                        [Foto prototipo vestito #1]
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Sviluppo e test dei primi prototipi
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartella 5: Fitting & Modifiche -->
+        <div class="folder" data-folder="5">
+            <div class="folder-tab">
+                <div class="folder-title">Fitting & Modifiche</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="notes" title="Note Fitting">N</div>
+                <div class="sub-tab" data-subtab="changes" title="Modifiche">M</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element text-element" style="top: 100px; left: 250px;">
+                        <div contenteditable="true">Aggiustare la lunghezza delle maniche di 2cm</div>
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Note di fitting e aggiustamenti finali
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartella 6: Collezione Finale -->
+        <div class="folder" data-folder="6">
+            <div class="folder-tab">
+                <div class="folder-title">Collezione Finale</div>
+            </div>
+            <div class="sub-tabs">
+                <div class="sub-tab" data-subtab="lookbook" title="Lookbook">L</div>
+                <div class="sub-tab" data-subtab="details" title="Dettagli">D</div>
+            </div>
+            <button class="close-btn" onclick="closeFolder(this)">&times;</button>
+            <div class="folder-content">
+                <div class="controls">
+                    <button class="btn" onclick="addText(this)">+ Testo</button>
+                    <button class="btn" onclick="addImage(this)">+ Immagine</button>
+                </div>
+                <div class="canvas-area">
+                    <div class="collage-element image-placeholder" style="top: 50px; left: 200px;">
+                        [Lookbook finale - Foto 1]
+                    </div>
+                    <div class="collage-element text-element" style="top: 250px; left: 50px;">
+                        <div contenteditable="true">Collezione Primavera/Estate 2025 - "Elementi Naturali"</div>
+                    </div>
+                </div>
+                <div class="content-preview">
+                    Presentazione finale della collezione completa
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFolder = null;
+        let expandedFolder = null;
+        let draggedElement = null;
+
+        // Gestione delle sotto-linguette
+        document.querySelectorAll('.sub-tab').forEach(subTab => {
+            subTab.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Rimuovi active da tutte le sotto-linguette della stessa cartella
+                const parentFolder = this.closest('.folder');
+                parentFolder.querySelectorAll('.sub-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Attiva questa sotto-linguetta
+                this.classList.add('active');
+                
+                // Qui puoi aggiungere la logica per cambiare il contenuto
+                // basato sulla sotto-linguetta selezionata
+                const subtabType = this.dataset.subtab;
+                console.log('Sotto-area selezionata:', subtabType);
+            });
+        });
+
+        // Gestione click sulle cartelle
+        document.querySelectorAll('.folder').forEach(folder => {
+            folder.addEventListener('click', function(e) {
+                if (e.target.closest('.close-btn') || e.target.closest('.controls') || e.target.closest('.collage-element')) {
+                    return;
+                }
+
+                const folderNum = this.dataset.folder;
+                
+                // Se è già espansa, non fare nulla
+                if (this.classList.contains('expanded')) {
+                    return;
+                }
+
+                // Se è già selezionata, espandila
+                if (this.classList.contains('selected')) {
+                    expandFolder(this);
+                    return;
+                }
+
+                // Deseleziona tutte le altre cartelle
+                document.querySelectorAll('.folder').forEach(f => {
+                    f.classList.remove('selected');
+                });
+
+                // Seleziona questa cartella
+                this.classList.add('selected');
+                selectedFolder = this;
+            });
+        });
+
+        function expandFolder(folder) {
+            folder.classList.remove('selected');
+            folder.classList.add('expanded');
+            expandedFolder = folder;
+        }
+
+        function closeFolder(btn) {
+            const folder = btn.closest('.folder');
+            folder.classList.remove('expanded');
+            folder.classList.remove('selected');
+            expandedFolder = null;
+            selectedFolder = null;
+        }
+
+        // Funzioni per aggiungere elementi al collage
+        function addText(btn) {
+            const canvas = btn.closest('.folder-content').querySelector('.canvas-area');
+            const textEl = document.createElement('div');
+            textEl.className = 'collage-element text-element';
+            textEl.style.top = Math.random() * 200 + 50 + 'px';
+            textEl.style.left = Math.random() * 300 + 50 + 'px';
+            textEl.innerHTML = '<div contenteditable="true">Nuovo testo...</div>';
+            canvas.appendChild(textEl);
+            makeElementDraggable(textEl);
+        }
+
+        function addImage(btn) {
+            const canvas = btn.closest('.folder-content').querySelector('.canvas-area');
+            const imgEl = document.createElement('div');
+            imgEl.className = 'collage-element image-placeholder';
+            imgEl.style.top = Math.random() * 200 + 50 + 'px';
+            imgEl.style.left = Math.random() * 300 + 50 + 'px';
+            imgEl.textContent = '[Nuova immagine]';
+            canvas.appendChild(imgEl);
+            makeElementDraggable(imgEl);
+        }
+
+        // Rendi gli elementi trascinabili
+        function makeElementDraggable(element) {
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+
+            element.addEventListener('mousedown', function(e) {
+                if (e.target.getAttribute('contenteditable') === 'true') return;
+                
+                isDragging = true;
+                draggedElement = element;
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = parseInt(window.getComputedStyle(element).left);
+                startTop = parseInt(window.getComputedStyle(element).top);
+                
+                element.classList.add('selected');
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging || draggedElement !== element) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                element.style.left = startLeft + deltaX + 'px';
+                element.style.top = startTop + deltaY + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (draggedElement === element) {
+                    isDragging = false;
+                    draggedElement = null;
+                    element.classList.remove('selected');
+                }
+            });
+        }
+
+        // Inizializza il drag per gli elementi esistenti
+        document.querySelectorAll('.collage-element').forEach(makeElementDraggable);
+
+        // Gestione click fuori dagli elementi per deselezionare
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.collage-element')) {
+                document.querySelectorAll('.collage-element').forEach(el => {
+                    el.classList.remove('selected');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
